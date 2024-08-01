@@ -1,35 +1,199 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+/* eslint-disable no-extra-boolean-cast */
+import axios from "axios";
+import { useState } from "react";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [modifiedResume, setModifiedResume] = useState("");
+  const [modifiedResumeLoading, setModifiedResumeLoading] = useState(false);
+  const [modifiedResumeError, setModifiedResumeError] = useState(false);
+  const [jobDescription, setJobDescription] = useState("");
+  const [resume, setResume] = useState("");
+
+  const genrateResponse = async () => {
+    if (!jobDescription || !resume) {
+      return alert("Please enter a job description and resume");
+    }
+    try {
+      setModifiedResumeLoading(true);
+
+      //1.
+      // Based on the above job description and resume, update the resume to better match the job description. Provide the updated resume with the following sections:
+
+      //   Summary:
+      //   Technical Skills:
+      //   Experience:
+      //   Education:
+      //   Projects:
+      //   Certifications:
+
+      // 2.
+      // Based on the above job description and resume, improve the resume to better match the job description. Ensure the resume is detailed, well-structured, and highlights the most relevant skills, experiences, and qualifications for the job.
+
+      const prompt = `
+        Job Description:
+        ${jobDescription}
+
+        Resume:
+        ${resume}
+
+         Based on the above job description and resume, improve the resume to better match the job description. Ensure the resume is detailed, well-structured, and highlights the most relevant skills, experiences, and qualifications for the job. Please consider the following points:
+
+        - Tailor the Summary to reflect the key requirements and responsibilities mentioned in the job description.
+        - Highlight Technical Skills that are relevant to the job.
+        - Emphasize Experience that demonstrates the candidate’s ability to fulfill the job responsibilities.
+        - Detail any relevant Education that supports the candidate’s qualifications.
+        - Include Projects that showcase applicable skills and achievements.
+        - Mention Certifications that are pertinent to the job.
+
+        Feel free to reorganize and enhance the resume to make it more compelling and aligned with the job requirements.
+       `;
+
+      const res = await axios({
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${
+          import.meta.env.VITE_GEMINI_API_KEY
+        }`,
+        method: "post",
+        data: {
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      setModifiedResume(res?.data?.candidates?.[0]?.content?.parts?.[0]?.text);
+    } catch (error) {
+      console.log(error);
+      setModifiedResumeError(true);
+    } finally {
+      setModifiedResumeLoading(false);
+    }
+  };
+
+  const renderResponse = () => {
+    if (modifiedResumeLoading) {
+      return (
+        <div role="status" className="flex justify-center mt-8">
+          <svg
+            aria-hidden="true"
+            className="inline w-10 h-10 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+            viewBox="0 0 100 101"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+              fill="currentColor"
+            />
+            <path
+              d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+              fill="currentFill"
+            />
+          </svg>
+          <span className="sr-only">Loading...</span>
+        </div>
+      );
+    } else if (modifiedResumeError) {
+      return <div>Something went wrong</div>;
+    } else {
+      return <pre className="text-balance">{modifiedResume}</pre>;
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="p-4">
+      <div className="min-w-0 flex-1">
+        <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          Resume Generator
+        </h2>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+      <div className="mt-10">
+        <div className="flex items-baseline gap-5">
+          <div className="w-32 flex-auto">
+            <label
+              htmlFor="jobDescription"
+              className="block text-sm font-medium leading-6 text-gray-900"
+            >
+              Add your Job Description
+            </label>
+            <div className="mt-2">
+              <textarea
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                rows="10"
+                name="jobDescription"
+                id="jobDescription"
+                className="ps-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="w-32 flex-auto">
+            <label
+              htmlFor="resume"
+              className="block text-sm font-medium leading-6 text-gray-900"
+            >
+              Add your Resume
+            </label>
+            <div className="mt-2">
+              <textarea
+                value={resume}
+                onChange={(e) => setResume(e.target.value)}
+                rows="10"
+                name="resume"
+                id="resume"
+                className="ps-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center w-full mt-8">
+          <button
+            onClick={genrateResponse}
+            disabled={modifiedResumeLoading}
+            type="button"
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center"
+          >
+            {modifiedResumeLoading && (
+              <svg
+                aria-hidden="true"
+                role="status"
+                className="inline w-4 h-4 me-3 text-white animate-spin"
+                viewBox="0 0 100 101"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                  fill="#E5E7EB"
+                />
+                <path
+                  d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                  fill="currentColor"
+                />
+              </svg>
+            )}
+            {modifiedResumeLoading ? "Generating..." : "Generate"}
+          </button>
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+
+      <div className="mt-10">
+        {!!modifiedResume && (
+          <>
+            <h1 className="text-3xl font-bold pb-4">Generated Resume:</h1>
+            <div>{renderResponse()}</div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
